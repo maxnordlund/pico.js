@@ -13,7 +13,7 @@
    * @return {Pico}
    */
   function Pico(input) {
-    var result, context = (this instanceof Element) ? this : document
+    var context = (this instanceof Element) ? this : document
 
     switch (toString(input).slice(8, -1)) {
       case "Null":
@@ -216,8 +216,6 @@
       )
     }},
     get: { get: function createGetter() {
-      var name = this.name
-
       if (isNaN(this.length)) {
         return this._createGetter()
       } else {
