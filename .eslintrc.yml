@@ -1,0 +1,31 @@
+env:
+  browser: true
+extends: eslint:recommended
+rules:
+  indent:
+    - error
+    - 2
+    - SwitchCase: 1
+      VariableDeclarator: { var: 2, let: 2, const: 3 }
+  linebreak-style:
+    - error
+    - unix
+  quotes:
+    - error
+    - double
+    - avoidEscape: true
+      allowTemplateLiterals: false
+  semi:
+    - error
+    - never
+  no-multi-spaces:
+    - error
+    - exceptions: { SwitchCase: true, VariableDeclarator: true }
+  no-unused-vars:
+    - error
+    - args: all
+      argsIgnorePattern: "^_"
+      ignoreRestSiblings: true
+      caughtErrors: all
+      caughtErrorsIgnorePattern: "^_"
+      varsIgnorePattern: "^_"
