@@ -1,115 +1,7 @@
 (function pico() {
   var call = Function.prototype.call,
-      has = call.bind(Object.prototype.hasOwnProperty)
+      has = call.bind(Object.prototype.hasOwnProperty),
       toString = call.bind(Object.prototype.toString)
-
-  /**
-   * Creates a new Pico array from the provided input. Use of `new` is optional.
-   *
-   * @constructor
-   * @this {Element} context to query elements from, when `input` is a string,
-   *                 defualts to the `document` host object.
-   * @param {string|Element|ArrayLike} input to coerce into a Pico array.
-   * @return {Pico}
-   */
-  function Pico(input) {
-    var context = (this instanceof Element) ? this : document
-
-    switch (toString(input).slice(8, -1)) {
-      case "Null":
-      case "Undefined": return Pico.from([])
-      case "Array":     return Pico.from(input)
-      case "String":    return Pico.from(context.querySelectorAll(input))
-      default:          return Pico.from(new Array(input))
-    }
-  }
-
-  window.$ = window.Pico = Pico
-
-  /**
-   * Casts the provided array like object into a Pico array.
-   *
-   * @param {ArrayLike} list to coerce into a Pico array.
-   * @return {Pico}
-   */
-  Pico.from = function Pico_from(list) {
-    var result = Array.from(list)
-
-    // Change the prototype of input to allow various extensions without
-    // actually touching Array.prototype
-    Object.setPrototypeOf(result, Pico.prototype)
-    return result
-  }
-
-  Object.setPrototypeOf(Pico, Array)
-  Pico.prototype = Object.create(Array.prototype, Object.assign(
-    decorateArrayMethods(), decorateElementMethods(), toDescriptors({
-      constructor: Pico,
-      on: function Pico$on(type, listner, useCapture) {
-        return this.addEventListener.apply(this, arguments)
-      },
-      off: function Pico$off(type, listner, useCapture) {
-        return this.removeEventListener.apply(this, arguments)
-      },
-      once: function Pico$once(type, listner, useCapture) {
-        var self = this
-        return this.addEventListener(type, function once() {
-          self.removeEventListener(type, once, useCapture)
-          return listner.apply(this, arguments)
-        }, useCapture)
-      }
-    }, {
-      constructors: { get: defineFunction("Pico$constructors", 0,
-        ElementDescriptor.finderFor("constructor", function constructorFilter(descriptor) {
-          return descriptor.get || "value" in descriptor
-        }, function constructorGetter() {
-          return this.constructor
-        }))
-      },
-      lengths: { get: defineFunction("Pico$lengths", 0,
-        ElementDescriptor.finderFor("length", function lengthFilter(descriptor) {
-          return descriptor.get || "value" in descriptor
-        }, function lengthGetter() {
-          return this.length
-        }))
-      }
-    })
-  ))
-
-  function decorateArrayMethods() {
-    return descriptorMap(Array.prototype, function(name, descriptor) {
-      var original = descriptor.value
-      if (typeof original !== "function") return
-
-      descriptor.value = defineFunction(name, method.length, function() {
-        var result = original.apply(this, arguments)
-        if (Array.isArray(result)) Object.setPrototypeOf(result, Pico.prototype)
-        return result
-      })
-    })
-  }
-
-  function decorateElementMethods() {
-    return objectMap(Object.getOwnPropertyNames(window).filter(function(name) {
-      return /^(HTML|SVG).*Element$/.test(name) && window[name] &&
-        Element.prototype.isPrototypeOf(Object.getPrototypeOf(window[name]))
-    }).concat(
-      "Element", "EventTarget", "Node" // Manually add super classes
-    ).reduce(function maxNumberOfParameters(lengths, className) {
-      descriptorMap(window[className].prototype, function(name, descriptor) {
-        // Set all property names, will default to `NaN`
-        lengths[name] = +lengths[name]
-
-        if (typeof descriptor.value === "function") {
-          lengths[name] = Math.max(lengths[name]|0, descriptor.value.length)
-        }
-      })
-
-      return lengths
-    }, {}), function createElementDescriptor(length, name) {
-      return new ElementDescriptor(name, length)
-    })
-  }
 
   // --- Helpers ---
 
@@ -145,14 +37,17 @@
   // === Mapper functions ===
 
   function descriptorMap(object, _fn, thisArg) {
-    var i, name, result,
+    var i, name,
+        result = {},
         fn = _fn.bind(thisArg),
         names = Object.getOwnPropertyNames(object)
 
     for (i = 0; i < names.length; ++i) {
+      name = names[i]
+
       // Disallow modifying `length` and `constructor`
       if (name === "length" || name === "constructor") continue
-      name = names[i]
+
       result[name] = fn(
         Object.getOwnPropertyDescriptor(object, name), name, object
       )
@@ -162,14 +57,17 @@
   }
 
   function objectMap(object, _fn, thisArg) {
-    var i, key, result,
+    var i, key,
+        result = {},
         fn = _fn.bind(thisArg),
         keys = Object.keys(object)
 
     for (i = 0; i < keys.length; ++i) {
+      key = keys[i]
+
       // Disallow modifying `length` and `constructor`
       if (key === "length" || key === "constructor") continue
-      key = keys[i]
+
       result[key] = fn(object[key], key, object)
     }
 
@@ -232,17 +130,19 @@
         })
       )
     }},
-    _createMethod: { value: function ElementDescriptor$_createMethod() {
-      var name = this.name
-      return Object.defineProperty(
-        defineFunction("Pico$"+name, length, ElementDescriptor.finderFor(name,
-          function methodFilter(descriptor) {
-            return typeof descriptor.value === "function"
-          }, function applyMethod() {
-            return this[name].apply(this, arguments)
-          })
-        ), "valueOf", new ValueOf(this._createGetter())
-      )
+    _createMethod: { value: function ElementDescriptor$_createMethod() {
+      var name = this.name,
+          method = Object.defineProperty(
+            defineFunction("Pico$"+name, length, ElementDescriptor.finderFor(name,
+              function methodFilter(descriptor) {
+                return typeof descriptor.value === "function"
+              }, function applyMethod() {
+                return this[name].apply(this, arguments)
+              })
+            ), "valueOf", new ValueOf(this._createGetter())
+          )
+
+      return function methodGetter() { return method }
     }}
   })
 
@@ -271,7 +171,7 @@
   })
 
   function ValueOf(getter) {
-    var valueOf =  defineFunction("valueOf", 0, getter)
+    var valueOf = defineFunction("valueOf", 0, getter)
     this.get = function getValueOf() { return valueOf.bind(this) }
   }
 
@@ -286,4 +186,116 @@
       return this.valueOf
     }
   }))
+
+  /**
+   * Creates a new Pico array from the provided input. Use of `new` is optional.
+   *
+   * @constructor
+   * @this {Element} context to query elements from, when `input` is a string,
+   *                 dafaults to the `document` host object.
+   * @param {string|Element|ArrayLike} input to coerce into a Pico array.
+   * @return {Pico}
+   */
+  function Pico(input) {
+    var context = (this instanceof Element) ? this : document
+
+    switch (toString(input).slice(8, -1)) {
+      case "Null":
+      case "Undefined": return Pico.from([])
+      case "Array":     return Pico.from(input)
+      case "String":    return Pico.from(context.querySelectorAll(input))
+      default:          return Pico.from(new Array(input))
+    }
+  }
+
+  window.$ = window.Pico = Pico
+
+  /**
+   * Casts the provided array like object into a Pico array.
+   *
+   * @param {ArrayLike} list to coerce into a Pico array.
+   * @return {Pico}
+   */
+  Pico.from = function Pico_from(list) {
+    var result = Array.from(list)
+
+    // Change the prototype of input to allow various extensions without
+    // actually touching Array.prototype
+    Object.setPrototypeOf(result, Pico.prototype)
+    return result
+  }
+
+  Object.setPrototypeOf(Pico, Array)
+  Pico.prototype = Object.create(Array.prototype, Object.assign(
+    decorateArrayMethods(), decorateElementMethods(), toDescriptors({
+      constructor: Pico,
+      on: function Pico$on(_type, _listener, _useCapture) {
+        return this.addEventListener.apply(this, arguments)
+      },
+      off: function Pico$off(_type, _listener, _useCapture) {
+        return this.removeEventListener.apply(this, arguments)
+      },
+      once: function Pico$once(type, listener, useCapture) {
+        var self = this
+        return this.addEventListener(type, function once() {
+          self.removeEventListener(type, once, useCapture)
+          return listener.apply(this, arguments)
+        }, useCapture)
+      }
+    }, {
+      constructors: { get: defineFunction("Pico$constructors", 0,
+        ElementDescriptor.finderFor("constructor", function constructorFilter(descriptor) {
+          return descriptor.get || "value" in descriptor
+        }, function constructorGetter() {
+          return this.constructor
+        }))
+      },
+      lengths: { get: defineFunction("Pico$lengths", 0,
+        ElementDescriptor.finderFor("length", function lengthFilter(descriptor) {
+          return descriptor.get || "value" in descriptor
+        }, function lengthGetter() {
+          return this.length
+        }))
+      }
+    })
+  ))
+
+  function decorateArrayMethods() {
+    return descriptorMap(Array.prototype, function(descriptor, name) {
+      var original = descriptor.value
+      if (typeof original !== "function") return
+
+      descriptor.value = defineFunction(name, original.length, function() {
+        var result = original.apply(this, arguments)
+        if (Array.isArray(result)) Object.setPrototypeOf(result, Pico.prototype)
+        return result
+      })
+
+      return descriptor
+    })
+  }
+
+  function decorateElementMethods() {
+    return objectMap(Object.getOwnPropertyNames(window).filter(function(name) {
+      return /^(HTML|SVG).*Element$/.test(name) && window[name] &&
+        Element.prototype.isPrototypeOf(Object.getPrototypeOf(window[name]))
+    }).concat(
+      "Element", "EventTarget", "Node" // Manually add super classes
+    ).reduce(function maxNumberOfParameters(lengths, className) {
+      descriptorMap(window[className].prototype, function(descriptor, name) {
+        // Set all property names, will default to `NaN`
+        lengths[name] = +lengths[name]
+
+        if (typeof descriptor.value === "function") {
+          lengths[name] = Math.max(lengths[name]|0, descriptor.value.length)
+        }
+
+        return descriptor
+      })
+
+      return lengths
+    }, {}), function createElementDescriptor(length, name) {
+      return new ElementDescriptor(name, length)
+    })
+  }
 })()
