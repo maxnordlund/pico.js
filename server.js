@@ -1,9 +1,10 @@
+/* eslint-env node, es6 */
+/* eslint no-console: off */
 const fs   = require("fs"),
       http = require("http"),
       url  = require("url")
 
 const index = fs.readFileSync("./index.html"),
-      pico  = fs.readFileSync("./pico.js"),
       SPACE = " ".repeat(100),
       LENGTH_OF_STARTUP_MESSAGE = 48
 
@@ -16,7 +17,7 @@ http.createServer(function server(req, res) {
   let body, type, start = process.hrtime()
 
   if (url.parse(req.url).pathname === "/pico.js") {
-    [body, type] = [pico, "appliation/javascript"]
+    [body, type] = [fs.readFileSync("./pico.js"), "appliation/javascript"]
   } else {
     [body, type] = [index, "text/html"]
   }
@@ -26,7 +27,7 @@ http.createServer(function server(req, res) {
     "Content-Type": type
   })
   res.end(body, function done() {
-    let duration, [seconds, nanoseconds] = process.hrtime(start)
+    let duration, [_seconds, nanoseconds] = process.hrtime(start)
 
     if (nanoseconds < 1e6) {
       duration = formatDuration(nanoseconds, 1e2, " µ", req.url.length)
@@ -48,9 +49,9 @@ http.createServer(function server(req, res) {
 
 function formatDuration(nanoseconds, magnitude, suffix, urlLength) {
   let duration = `${Math.round(nanoseconds/magnitude)/10}`,
-    padding = SPACE.slice(
-      0, LENGTH_OF_STARTUP_MESSAGE - urlLength - duration.length
-    )
+      padding = SPACE.slice(
+        0, LENGTH_OF_STARTUP_MESSAGE - urlLength - duration.length
+      )
 
   return `${padding}\u001b[2m${duration}\u001b[0m ${suffix}`
 }
