@@ -1,26 +1,26 @@
 env:
   browser: true
+  es6: true
 extends: eslint:recommended
+parserOptions:
+  sourceType: module
+  ecmaVersion: 9
 rules:
   indent:
     - error
     - 2
     - SwitchCase: 1
-      VariableDeclarator: { var: 2, let: 2, const: 3 }
+      VariableDeclarator:
+        var: 2
+        let: 2
+        const: 3
   linebreak-style:
     - error
     - unix
-  quotes:
-    - error
-    - double
-    - avoidEscape: true
-      allowTemplateLiterals: false
-  semi:
-    - error
-    - never
   no-multi-spaces:
     - error
-    - exceptions: { SwitchCase: true, VariableDeclarator: true }
+    - exceptions:
+        SwitchCase: true
   no-unused-vars:
     - error
     - args: all
@@ -28,4 +28,13 @@ rules:
       ignoreRestSiblings: true
       caughtErrors: all
       caughtErrorsIgnorePattern: "^_"
-      varsIgnorePattern: "^_"
+  object-curly-spacing:
+    - error
+    - always
+  quotes:
+    - error
+    - double
+    - avoidEscape: true
+  semi:
+    - error
+    - never
