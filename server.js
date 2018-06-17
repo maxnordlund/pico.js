@@ -16,6 +16,9 @@ http.createServer(function server(req, res) {
       pathname = url.parse(req.url).pathname
 
   switch (pathname) {
+    case "/main.js":
+      [body, type] = [fs.readFileSync("./main.js"), "application/javascript"]
+      break
     case "/pico.js":
       [body, type] = [fs.readFileSync("./pico.js"), "application/javascript"]
       break
