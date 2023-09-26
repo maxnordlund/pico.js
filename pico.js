@@ -70,60 +70,19 @@ export default class Pico extends Array {
     }
   }
 
-  get once() {
-    let method, onceSupported = false
-
-    try {
-      let options = {
-        get once() {
-          onceSupported = true
-        }
+  once(type, options, listener) {
+    switch (typeof options) {
+      case "boolean": {
+        options = { capture: options }
+        break
       }
-
-      window.addEventListener("test", options, options)
-      window.removeEventListener("test", options, options)
-    } catch(_error) {
-      onceSupported = false
-    }
-
-    if (onceSupported) {
-      method = function once(type, options, listener) {
-        switch (typeof options) {
-          case "boolean": {
-            options = { capture: options }
-            break
-          }
-          case "function": {
-            [listener, options] = [options, listener]
-            break
-          }
-        }
-        options.once = true
-        this.on(type, listener, options)
-      }
-    } else {
-      method = function once(type, options, listener) {
-        if (typeof options == "function") {
-          [listener, options] = [options, listener]
-        }
-
-        let self = this
-
-        this.on(type, function callback() {
-          self.off(type, callback, options)
-          return listener.apply(this, arguments)
-        }, options)
+      case "function": {
+        [listener, options] = [options, listener]
+        break
       }
     }
-
-    Object.defineProperty(Pico.prototype, "once", {
-      value: method,
-      writable: true,
-      enumerable: false,
-      configurable: true
-    })
-
-    return method
+    options.once = true
+    this.on(type, listener, options)
   }
 
   get html() {
