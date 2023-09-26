@@ -4,14 +4,13 @@ import { _safeGet } from "./internal/functions.js"
  * @param {string | Iterable<any> | ArrayLike<any> | null} input
  */
 export function $(input) {
-  let context = (this instanceof Element) ? this : document
-
-  if (typeof input == "string") {
-    return Pico.from(context.querySelectorAll(input))
-  } else if (typeof Object(input)[Symbol.iterator] == "function") {
-    return Pico.from(input)
-  } else if (input == null) {
+  if (input == null) {
     return new Pico()
+  } else if (typeof input == "string") {
+    let context = (this instanceof Element) ? this : document
+    return Pico.from(context.querySelectorAll(input))
+  } else if (typeof input[Symbol.iterator] == "function") {
+    return Pico.from(input)
   } else {
     return new Pico(input)
   }

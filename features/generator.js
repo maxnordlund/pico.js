@@ -22,7 +22,7 @@ export async function* _eventToAsyncGenerator(pico, type, options) {
   }
 
   while (true) {
-    await semaphore.lock()
+    await semaphore
 
     while (events.length) {
       yield events.shift()
@@ -32,21 +32,11 @@ export async function* _eventToAsyncGenerator(pico, type, options) {
 
 export class Lock {
   constructor() {
-    this.lock()
-  }
-
-  lock() {
     let promise = new Promise((resolve, _reject) => {
-      this.unlock = resolve
+      this.unlock = resolve.bind(undefined, void 0)
     })
     this.then = promise.then.bind(promise)
-
-    return this
   }
-
-  unlock() {}
-
-  then() {}
 }
 
 export default class LazyList {

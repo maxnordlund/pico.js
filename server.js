@@ -10,27 +10,26 @@ process.on("SIGINT", () => {
 })
 
 http.createServer(function server(req, res) {
-  let length, body, type,
-      status = 200,
+  let length,
+      type = "application/json",
+      body = JSON.stringify({error: "Not found"}),
+      status = 404,
       start = process.hrtime(),
       pathname = url.parse(req.url).pathname
 
-  switch (pathname) {
-    case "/main.js":
-      [body, type] = [fs.readFileSync("./main.js"), "application/javascript"]
-      break
-    case "/pico.js":
-      [body, type] = [fs.readFileSync("./pico.js"), "application/javascript"]
-      break
-    case "/":
-      [body, type] = [fs.readFileSync("./index.html"), "text/html"]
-      break
-    default:
-      status = 404
-      type = "application/json"
-      body = JSON.stringify({
-        error: "Not found"
-      })
+  pathname = ""
+  if (pathname === "/") {
+    type = "text/html"
+    body = fs.readFileSync("./index.html").toString("utf-8")
+  } else if (pathname.endsWith(".js")) {
+    try {
+      body  = fs.readFileSync(`.${pathname}`).toString("utf-8")
+    } catch (error) {
+      if (error?.code !== "ENOENT") {
+        status = 500
+        body = JSON.stringify(error)
+      }
+    }
   }
 
   length = Buffer.byteLength(body)
@@ -38,7 +37,7 @@ http.createServer(function server(req, res) {
     "Content-Length": length,
     "Content-Type": `${type}; charset=utf-8`
   })
-  res.end(body.toString("utf-8"), function done() {
+  res.end(body, function done() {
     // eslint-disable-next-line no-unused-vars
     let duration, [_seconds, nanoseconds] = process.hrtime(start)
 

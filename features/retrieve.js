@@ -171,7 +171,7 @@ export function _assignDefaultFetchOptions(method, init) {
   // Check if body is an object or array literal, i.e. {} or []
   let body = init.body,
       bodyPrototype = body && Object.getPrototypeOf(body),
-      bodyConstructor = bodyPrototype && bodyPrototype.constructor
+      bodyConstructor = bodyPrototype?.constructor
 
   if (body && (
     // Object.create(null)
@@ -198,15 +198,11 @@ export function _assignDefaultFetchOptions(method, init) {
  * @return {Promise<Response>}
  */
 export async function _performFetch(input, init) {
-  let response
+  let response = await builtin.fetch(input, init)
 
-  if (init.rawBody) {
-    response = await builtin.fetch(input, init)
-  } else {
-    let contentType, body
-
-    response = await builtin.fetch(input, init),
-    contentType = response.headers.get("content-type")
+  if (!init.rawBody) {
+    let body,
+      contentType = response.headers.get("content-type") || ""
 
     if (contentType.includes("json")) {
       body = await response.json()
