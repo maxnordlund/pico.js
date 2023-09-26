@@ -11,6 +11,10 @@ export function definePicoMethod(method) {
   }
 }
 
+/**
+ * @param {object} object
+ * @param {string} path
+ */
 export function _safeGet(object, path) {
   if (path == "") return object
 

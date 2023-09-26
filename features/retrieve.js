@@ -2,7 +2,7 @@ import * as builtin from "../internal/builtin.js"
 import { definePicoMethod } from "../internal/functions.js"
 
 /**
- * Retrives the provided URL using the provided HTTP method and options.
+ * Retrieves the provided URL using the provided HTTP method and options.
  *
  * This acts as a wrapper around the builtin `fetch`. Like it, this defaults to
  * preform a `GET` request. Unlike the builtin `fetch` however, this throws an
@@ -17,9 +17,9 @@ import { definePicoMethod } from "../internal/functions.js"
  *
  * @param {string} [method=GET] HTTP method used for the request.
  * @param {string} input URL to fetch, same meaning and restrictions as the
- *                       corresponding paramter to the builtin `fetch`.
+ *                       corresponding parameter to the builtin `fetch`.
  * @param {Object} [init] optional options used for the request, same meaning
- *                        and restrictions as the corresponding paramter to
+ *                        and restrictions as the corresponding parameter to
  *                        the builtin `fetch`.
  *
  * @return {Promise<Response>}
@@ -37,9 +37,6 @@ export async function retrieve(method="GET", input, init={}) {
 
 /**
  * Represents a successful response with a 4XX or 5XX status code.
- *
- * The builtin `fetch` don't reject these status codes, which is not too useful.
- * Instead `retrive`
  */
 export class HTTPError extends Error {
   constructor(response, message=response.statusText) {
@@ -50,11 +47,33 @@ export class HTTPError extends Error {
   }
 }
 
+/**
+ * @typedef {RequestInit} RetrieveInit
+ * @property {boolean} [rawBody] perform no content negotiation on the response
+ */
+
+/**
+ * Calls `fetch` and performs content negotiation. Uses the same parameters as
+ * the global `fetch`.
+ *
+ * Passing `rawBody: true` in the `init` no content negotiation is performed.
+ * This then becomes equivalent to calling `fetch` directly.
+ *
+ * Throws an `HTTPError` if the response has an non-2XX status.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
+ *
+ * @param {string} [method] HTTP method
+ * @param {string | URL} input URL to the resource to fetch.
+ * @param {RetrieveInit} [init] Extra options for the request.
+ *
+ * @return {Promise<Response>}
+ */
 definePicoMethod(async function retrieve(method="GET", input, init={}) {
   switch (arguments.length) {
-    case 0: // $("form").fetch()
-    case 1: // $("form").fetch({})
-      return _retriveExtractedFormData(
+    case 0: // $("form").retrieve()
+    case 1: // $("form").retrieve({})
+      return _retrieveExtractedFormData(
         // Ignore input as we always get the URL from the forms action property
         undefined, init, _extractFormData(this.filterByInstance(HTMLFormElement))
       )
@@ -67,7 +86,7 @@ definePicoMethod(async function retrieve(method="GET", input, init={}) {
   if (init.body) {
     return new this.constructor[Symbol.species](_performFetch(input, init))
   } else {
-    let result = _retriveExtractedFormData(input, init, _extractFormData(this))
+    let result = _retrieveExtractedFormData(input, init, _extractFormData(this))
 
     if (result.length == 0) {
       // We couldn't find anything to attach, just fire the request as-is.
@@ -77,16 +96,22 @@ definePicoMethod(async function retrieve(method="GET", input, init={}) {
   }
 })
 
+/**
+ * @param {string | URL | HTMLFormElement} [method]
+ * @param {string | URL} input
+ * @param {RetrieveInit} [init]
+ * @returns [string, string, RetrieveInit]
+ */
 export function _normalizeRetrieveParameterOrder(method="GET", input, init={}) {
   switch (arguments.length) {
     case 0:
       throw new TypeError("missing parameter input")
     case 1:
       if (typeof method == "string") {
-        // fetch("/foo")
+        // retrieve("/foo")
         [method, input] = ["GET", method]
       } else if (method instanceof HTMLFormElement) {
-        // fetch(form)
+        // retrieve(form)
         [method, input, init] = [method.method, method.action, method]
       } else {
         throw new TypeError("input is not a string or form element")
@@ -94,14 +119,14 @@ export function _normalizeRetrieveParameterOrder(method="GET", input, init={}) {
       break
     case 2:
       if (typeof input == "string") {
-        // fetch("DELETE", "/foo")
+        // retrieve("DELETE", "/foo")
       } else {
-        // fetch("/foo", {})
+        // retrieve("/foo", {})
         [method, input, init] = ["GET", method, input]
       }
       break
     case 3:
-      // fetch("POST", "/foo", {})
+      // retrieve("POST", "/foo", {})
       break
     default:
       // eslint-disable-next-line no-console
@@ -110,6 +135,10 @@ export function _normalizeRetrieveParameterOrder(method="GET", input, init={}) {
   return [method, input, init]
 }
 
+/**
+ * @param {string} method
+ * @param {HTMLFormElement | RetrieveInit} init
+ */
 export function _assignDefaultFetchOptions(method, init) {
   if (init instanceof FormData) {
     // We're posting a regular form, just wrap it for `fetch`
@@ -150,7 +179,7 @@ export function _assignDefaultFetchOptions(method, init) {
     // Object literal
     bodyConstructor === Object ||
     // Array literal, unlike Array.isArray this does not allow subclasses like
-    // Pico. Using one of those is probably a misstake, and can easily be fixed
+    // Pico. Using one of those is probably a mistake, and can easily be fixed
     // by an explicit cast using Array.from
     bodyConstructor === Array
   )) {
@@ -163,18 +192,8 @@ export function _assignDefaultFetchOptions(method, init) {
 }
 
 /**
- * Calls `fetch` and performs content negotiation. Uses the same parameters as
- * the global `fetch`.
- *
- * Passing `rawBody: true` in the `init` no content negotiation is performed.
- * This then becomes equivalent to calling `fetch` directly.
- *
- * Throws an `HTTPError` if the response has an non-2XX status.
- *
- * @see https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
- *
- * @param {string} input URL to the resource to fetch.
- * @param {Object} init Extra options for the request.
+ * @param {string | URL} input URL to the resource to fetch.
+ * @param {RetrieveInit} init Extra options for the request.
  *
  * @return {Promise<Response>}
  */
@@ -257,7 +276,7 @@ export function _extractFormData(array) {
   return result
 }
 
-export function _retriveExtractedFormData(input, init, mappable) {
+export function _retrieveExtractedFormData(input, init, mappable) {
   return mappable.map((params) => {
     return retrieve(params[0] || input, Object.assign({}, init, params[1]))
   })

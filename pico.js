@@ -1,5 +1,8 @@
 import { _safeGet } from "./internal/functions.js"
 
+/**
+ * @param {string | Iterable<any> | ArrayLike<any> | null} input
+ */
 export function $(input) {
   let context = (this instanceof Element) ? this : document
 
@@ -188,7 +191,7 @@ export default class Pico extends Array {
   }
 
   /**
-   * Same as the builtin version, except that the paramter order is reversed.
+   * Same as the builtin version, except that the parameter order is reversed.
    *
    * This makes it more ergonomic to use when you want to provide an initial
    * value. Compare:
@@ -214,7 +217,7 @@ export default class Pico extends Array {
   }
 
   /**
-   * Same as the builtin version, except that the paramter order is reversed.
+   * Same as the builtin version, except that the parameter order is reversed.
    *
    * This makes it more ergonomic to use when you want to provide an initial
    * value. Compare:

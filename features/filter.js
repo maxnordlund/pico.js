@@ -89,7 +89,7 @@ export function _safeCallFilter(thisArg, method, ...args) {
 
 export const OPERATORS = new Map([
   // Builtin operators
-  ["!", function truthy(subject, _expected) {
+  ["!", function falsey(subject, _expected) {
     return !subject
   }],
   ["!!", function truthy(subject, _expected) {
