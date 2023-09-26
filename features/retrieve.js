@@ -238,7 +238,7 @@ export async function _performFetch(input, init) {
 export function _extractFormData(array) {
   let formData = new FormData(),
       hasExtraData = false,
-      result = new Object.getPrototypeOf(array).constructor[Symbol.species]()
+      result = new (Object.getPrototypeOf(array).constructor[Symbol.species])()
 
   for (let item of array) {
     if (item instanceof HTMLFormElement) {

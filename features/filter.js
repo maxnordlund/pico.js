@@ -15,8 +15,6 @@ definePicoMethod(function filterBy(conditionOrOperator, maybeOperatorOrValue, ma
         conditions.set("!!", [conditionOrOperator])
       } else {
         // filterBy({ instanceof: HTMLFormElement, typeof: ["property", "string"] })
-        conditions = new Map()
-
         for (let [key, value] of _objectIterator(conditionOrOperator)) {
           if (Array.isArray(value)) {
             conditions.set(key, value)

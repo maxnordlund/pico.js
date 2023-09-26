@@ -18,7 +18,7 @@ export function definePicoMethod(method) {
 export function _safeGet(object, path) {
   if (path == "") return object
 
-  for (let key in path.split(".")) {
+  for (let key of path.split(".")) {
     if (object == null) {
       break
     } else {

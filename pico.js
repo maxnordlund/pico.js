@@ -183,7 +183,18 @@ export default class Pico extends Array {
   }
 
   sortBy(key="") {
-    return this.sort((a, b) => _safeGet(a, key) < _safeGet(b, key))
+    return this.sort((a, b) => {
+      let aValue = _safeGet(a, key),
+          bValue = _safeGet(b, key)
+
+      if (aValue < bValue) {
+        return -1
+      } else if (aValue === bValue) {
+        return 0
+      } else {
+        return 1
+      }
+    })
   }
 
   sortNumericallyBy(key="") {
